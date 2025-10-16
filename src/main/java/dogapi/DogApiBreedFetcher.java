@@ -24,12 +24,46 @@ public class DogApiBreedFetcher implements BreedFetcher {
      * @throws BreedNotFoundException if the breed does not exist (or if the API call fails for any reason)
      */
     @Override
-    public List<String> getSubBreeds(String breed) {
-        // TODO Task 1: Complete this method based on its provided documentation
-        //      and the documentation for the dog.ceo API. You may find it helpful
-        //      to refer to the examples of using OkHttpClient from the last lab,
-        //      as well as the code for parsing JSON responses.
-        // return statement included so that the starter code can compile and run.
-        return new ArrayList<>();
+    public List<String> getSubBreeds(String breed) throws BreedNotFoundException {
+        // Build the API URL for fetching sub-breeds
+        String url = "https://dog.ceo/api/breed/" + breed.toLowerCase() + "/list";
+
+        // Create the HTTP request
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            // Parse the JSON response
+            if (response.body() == null) {
+                throw new BreedNotFoundException(breed);
+            }
+
+            String responseBody = response.body().string();
+            JSONObject json = new JSONObject(responseBody);
+
+            // Check if the API returned success status
+            String status = json.getString("status");
+            if (!"success".equals(status)) {
+                throw new BreedNotFoundException(breed);
+            }
+
+            // Extract the message array containing sub-breeds
+            JSONArray subBreedsArray = json.getJSONArray("message");
+            List<String> subBreeds = new ArrayList<>();
+
+            for (int i = 0; i < subBreedsArray.length(); i++) {
+                subBreeds.add(subBreedsArray.getString(i));
+            }
+
+            return subBreeds;
+
+        } catch (IOException e) {
+            // If any IO error occurs, throw BreedNotFoundException
+            throw new BreedNotFoundException(breed);
+        } catch (Exception e) {
+            // If any other error occurs (e.g., JSON parsing), throw BreedNotFoundException
+            throw new BreedNotFoundException(breed);
+        }
     }
 }
